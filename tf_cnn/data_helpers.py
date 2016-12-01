@@ -1,0 +1,309 @@
+#!/usr/bin/python3 -t
+# coding: utf8
+
+
+import uuid
+import sys
+sys.path.extend(['..'])
+
+import numpy as np
+import re
+import itertools
+from collections import Counter
+import os
+
+from helpers import data_helpers_test
+
+def clean_str_new(string):
+    """
+    Tokenization/string cleaning for all datasets except for SST.
+    Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
+    """
+
+    #print 'Raw sting: ', string
+    #print type(string), len(string)
+
+    """
+    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
+    string = re.sub(r"\'s", " \'s", string)
+    string = re.sub(r"\'ve", " \'ve", string)
+    string = re.sub(r"n\'t", " n\'t", string)
+    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'d", " \'d", string)
+    string = re.sub(r"\'ll", " \'ll", string)
+    string = re.sub(r",", " , ", string)
+    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"\(", " \( ", string)
+    string = re.sub(r"\)", " \) ", string)
+    string = re.sub(r"\?", " \? ", string)
+    string = re.sub(r"\s{2,}", " ", string)
+
+    string = re.sub("[\s*|\d*]", " ", string, re.UNICODE)
+
+    string = re.sub(r",", " , ", string)
+    string = re.sub(r":", " : ", string)
+    string = re.sub(r";", " ; ", string)
+    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"\(", " \( ", string)
+    string = re.sub(r"\)", " \) ", string)
+    string = re.sub(r"\?", " \? ", string)
+    """
+
+    #string = re.sub(r"[\\n]+", r" ", string, re.U)
+    #string = re.sub(r"[\\r]+", r" ", string, re.U)
+
+    #string = re.sub(r'[\s]+', r' ', string, re.U)
+    #string = re.sub(r'[\w]+', r' ', string, re.U)
+    #string = re.sub(r"[\d]+", r" ", string, re.U)
+    #string = re.sub(r"[,\.:;'\\\"`!@/\?\[\]\(\)\{\}_\*&%\$#=\+~<>]+", r" ", string, re.U)
+    #string = re.sub(r'[\-{2,}]', r' ', string, re.U)
+    #string = re.sub(r'[\s\-\s]', r' ', string, re.U)
+    #string = re.sub(r'[_{2,}]', r' ', string, re.U)
+
+    #string = re.sub("[\d]", " ", string, re.UNICODE|re.M)
+    #string = re.sub("[,.:;'\"`!@?/\\|\[\](){}_/*&/%$#=+~]", " ", string, re.UNICODE|re.M)
+
+    #string2 = nltk.tokenize.word_tokenize(string)
+    #print("\n NLTK tokens")
+    #print string2
+
+    string = string.decode('utf-8').lower()
+
+    string = re.sub(u'[^абвгджзёеыйиклмнуопрстфчхшщцэюяьъqwertyuiopasdfghjklzxcvbnm ]+', ' ', string.decode('utf-8'), re.U)
+    string = re.sub(u"\s{2,}", " ", string.decode('utf-8'), re.U)
+
+    #print('\nClear sting: {}'.format(string))
+    #print type(string), len(string)
+    #raw_input()
+
+    return string
+
+
+def clean_str2(string):
+
+    string = string.lower()
+
+    string = re.sub('[^абвгджзёеыйиклмнуопрстфчхшщцэюяьъqwertyuiopasdfghjklzxcvbnm ]+', ' ', string)
+    string = re.sub("\s{2,}", " ", string)
+
+    return string
+
+def clean_str(string):
+    """
+    Tokenization/string cleaning for all datasets except for SST.
+    Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
+    """
+    #print 'Raw sting: ', string, type(string)
+
+    """
+    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)
+    string = re.sub(r"\'s", " \'s", string)
+    string = re.sub(r"\'ve", " \'ve", string)
+    string = re.sub(r"n\'t", " n\'t", string)
+    string = re.sub(r"\'re", " \'re", string)
+    string = re.sub(r"\'d", " \'d", string)
+    string = re.sub(r"\'ll", " \'ll", string)
+    string = re.sub(r",", " , ", string)
+    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"\(", " \( ", string)
+    string = re.sub(r"\)", " \) ", string)
+    string = re.sub(r"\?", " \? ", string)
+    string = re.sub(r"\s{2,}", " ", string)
+    """
+
+    string = re.sub("[\s*|\d*]", " ", string, re.UNICODE)
+
+    string = re.sub(r",", " , ", string)
+    string = re.sub(r":", " : ", string)
+    string = re.sub(r";", " ; ", string)
+    string = re.sub(r"!", " ! ", string)
+    string = re.sub(r"\(", " \( ", string)
+    string = re.sub(r"\)", " \) ", string)
+    string = re.sub(r"\?", " \? ", string)
+
+    string = re.sub("\s{2,}", " ", string, re.UNICODE)
+
+    #print('Clear sting: {}'.format(string.strip().decode('utf-8').lower()))
+    #raw_input()
+
+    return string.strip().decode('utf-8').lower()
+
+def load_data_and_labels(positive_data_file, negative_data_file, data_dir=None):
+    """
+    Loads MR polarity data from files, splits the data into words and generates labels.
+    Returns split sentences and labels.
+    """
+
+    # Load data from files
+    """
+    positive_examples = list(open(positive_data_file, "r").readlines())
+    positive_examples = [s.strip() for s in positive_examples]
+    negative_examples = list(open(negative_data_file, "r").readlines())
+    negative_examples = [s.strip() for s in negative_examples]
+    """
+    positive_examples = list()
+    negative_examples = list()
+
+    if data_dir:
+        data_folder = data_dir
+    else:
+        data_folder = './data'
+
+    train_data = {'00': list(), '01': list()}
+
+    for current_cat in ['00', '01']:
+        print("{}/{}/".format(data_folder, current_cat))
+        file_list = list()
+        for root, dirs, f_list in os.walk("{}/{}/".format(data_folder, current_cat)):
+            for oo in f_list:
+                if 'class.nfo' != oo:
+                    file_list.append('{}/{}/{}'.format(data_folder, current_cat, oo))
+
+        print("Готовим категорию: {} - {} сообщений".format(current_cat, len(file_list)))
+
+        for ff in file_list:
+            f = open(ff, 'r')
+            ss = f.read()
+            train_data[current_cat].append(ss)
+
+    positive_examples = train_data['00']
+    negative_examples = train_data['01']
+
+    # Split by words
+    x_text = positive_examples + negative_examples
+    x_text = [clean_str(sent) for sent in x_text]
+    # Generate labels
+    positive_labels = [[0, 1] for _ in positive_examples]
+    negative_labels = [[1, 0] for _ in negative_examples]
+    y = np.concatenate([positive_labels, negative_labels], 0)
+
+    print(x_text)
+    print(y)
+
+    raw_input()
+    return [x_text, y]
+
+def load_data_and_labels_new(positive_data_file=None, negative_data_file=None, data_dir=None):
+    """
+    Loads MR polarity data from files, splits the data into words and generates labels.
+    Returns split sentences and labels.
+    """
+
+    # Load data from files
+    """
+    positive_examples = list(open(positive_data_file, "r").readlines())
+    positive_examples = [s.strip() for s in positive_examples]
+    negative_examples = list(open(negative_data_file, "r").readlines())
+    negative_examples = [s.strip() for s in negative_examples]
+    """
+    positive_examples = list()
+    negative_examples = list()
+
+    if data_dir:
+        data_folder = data_dir
+    else:
+        data_folder = './data'
+
+    train_data = {'00': list(), '01': list()}
+
+    for current_cat in ['00', '01']:
+        print("{}/{}/".format(data_folder, current_cat))
+        file_list = list()
+        for root, dirs, f_list in os.walk("{}/{}/".format(data_folder, current_cat)):
+            for oo in f_list:
+                if 'class.nfo' != oo:
+                    file_list.append('{}/{}/{}'.format(data_folder, current_cat, oo))
+
+        print("Готовим категорию: {} - {} сообщений".format(current_cat, len(file_list)))
+
+        data = list()
+        for ff in file_list:
+            f = open(ff, 'r')
+            ss = re.split(r'[\r|\n]+', f.read())
+            train_data[current_cat].append(" ".join(ss))
+
+    positive_examples = train_data['00']
+    negative_examples = train_data['01']
+
+    # Split by words
+    x_text = positive_examples + negative_examples
+    x_text = [clean_str_new(sent) for sent in x_text]
+    # Generate labels
+    positive_labels = [[0, 1] for _ in positive_examples]
+    negative_labels = [[1, 0] for _ in negative_examples]
+    y = np.concatenate([positive_labels, negative_labels], 0)
+
+    #print(x_text)
+    #print(y)
+    #raw_input()
+
+    return [x_text, y]
+
+def load_data_and_labels_new_helpers(data_dir=None):
+
+    positive_examples = list()
+    negative_examples = list()
+
+    if data_dir:
+        data_folder = data_dir
+    else:
+        data_folder = './data'
+
+    train_data = {'00': list(), '01': list()}
+
+    for current_cat in ['00', '01']:
+        print("{}/{}/".format(data_folder, current_cat))
+        file_list = list()
+        for root, dirs, f_list in os.walk("{}/{}/".format(data_folder, current_cat)):
+            for oo in f_list:
+                if 'class.nfo' != oo:
+                    file_list.append('{}/{}/{}'.format(data_folder, current_cat, oo))
+
+        print("Готовим категорию: {} - {} сообщений".format(current_cat, len(file_list)))
+
+        data = list()
+        for ff in file_list:
+            f = open(ff, 'r')
+            ss = re.split(r'[\r|\n]+', f.read())
+            train_data[current_cat].append(" ".join(ss))
+
+    positive_examples = train_data['00']
+    negative_examples = train_data['01']
+
+    # Split by words
+    x_text = positive_examples + negative_examples
+    # print('Old: ', [clean_str2(sent) for sent in x_text])
+    # print('New: ', [data_helpers_test.clean_str_new(sent) for sent in x_text])
+
+    x_text = [data_helpers_test.clean_str_new(sent) for sent in x_text]
+    # Generate labels
+    positive_labels = [[0, 1] for _ in positive_examples]
+    negative_labels = [[1, 0] for _ in negative_examples]
+    y = np.concatenate([positive_labels, negative_labels], 0)
+
+    #print x_text
+    #print y
+    #raw_input()
+
+    return [x_text, y]
+
+
+def batch_iter(data, batch_size, num_epochs, shuffle=True):
+    """
+    Generates a batch iterator for a dataset.
+    """
+    data = np.array(data)
+    data_size = len(data)
+    num_batches_per_epoch = int(len(data)/batch_size) + 1
+    for epoch in range(num_epochs):
+        # Shuffle the data at each epoch
+        if shuffle:
+            shuffle_indices = np.random.permutation(np.arange(data_size))
+            shuffled_data = data[shuffle_indices]
+        else:
+            shuffled_data = data
+        for batch_num in range(num_batches_per_epoch):
+            start_index = batch_num * batch_size
+            end_index = min((batch_num + 1) * batch_size, data_size)
+            yield shuffled_data[start_index:end_index]
+
